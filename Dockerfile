@@ -1,23 +1,23 @@
 FROM alpine
 
+RUN apk add --update shadow openjdk8-jre wget bash git && \
+    groupadd -g 9999 docker && \
+    useradd -m -d /home/docker -u 9999 -g docker docker
+
+USER docker
+
 ENV FLYWAY_VERSION=5.1.4
 
-ENV FLYWAY_HOME=/opt/flyway/$FLYWAY_VERSION \
+ENV FLYWAY_HOME=/home/docker/flyway/$FLYWAY_VERSION \
  FLYWAY_PKGS="https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/${FLYWAY_VERSION}/flyway-commandline-${FLYWAY_VERSION}.tar.gz"
 
-RUN apk add --update \
- openjdk8-jre \
- wget \
- bash \
- git
+RUN mkdir -p $FLYWAY_HOME && \
+ chgrp -R 9999 $FLYWAY_HOME && \
+ chmod -R 755 $FLYWAY_HOME
 
-RUN wget --no-check-certificate $FLYWAY_PKGS &&\
- mkdir -p $FLYWAY_HOME && \
- mkdir -p /var/flyway/data && \
- tar -xzf flyway-commandline-$FLYWAY_VERSION.tar.gz -C $FLYWAY_HOME --strip-components=1
-
-RUN chgrp -R 0 $FLYWAY_HOME && \
-    chmod -R g=u $FLYWAY_HOME
-
-RUN chgrp -R 0 $FLYWAY_HOME/sql && \
-    chmod -R g=u $FLYWAY_HOME/sql
+RUN cd $HOME && \
+ wget --no-check-certificate $FLYWAY_PKGS && \
+ tar -xzf $HOME/flyway-commandline-$FLYWAY_VERSION.tar.gz -C $FLYWAY_HOME --strip-components=1 && \
+ git clone https://github.com/filiples/flyway.git $HOME/flyway-repo && \
+ cp -f flyway-repo/sql/* $FLYWAY_HOME/sql && \
+ $FLYWAY_HOME/flyway clean migrate -user=$DB_USER -password=$DB_PASS -url=$DB_URL
