@@ -9,20 +9,9 @@ spec:
       uri: "https://github.com/filiples/flyway.git"
   strategy:
     dockerStrategy:
-      from:
-        kind: "ImageStreamTag"
-        name: "flyway:latest"
+      dockerfilePath: ./Dockerfile
   postCommit: 
     script: |
       git clone --branch $GIT_BRANCH --single-branch https://$GIT_USERNAME:$GIT_PASSWORD@$GIT_REPO $HOME/flyway-repo
-      cp -f flyway-repo/src/main/resources/sql/* $FLYWAY_HOME/sql
+      cp -f $HOME/flyway-repo/src/main/resources/sql/* $FLYWAY_HOME/sql
       $FLYWAY_HOME/flyway clean migrate -user=$DB_USER -password=$DB_PASS -url=$DB_URL
-
----
-
-apiVersion: "v1"
-kind: "ImageStream"
-metadata:
-  name: "flyway"
-spec:
-  dockerImageRepository: "filipcomsysto/flyway"
